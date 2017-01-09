@@ -1,0 +1,8 @@
+﻿main.obj : error LNK2001: unresolved external symbol _MPI_Recv@28
+main.obj : error LNK2001: unresolved external symbol _MPI_Wtime@0
+main.obj : error LNK2001: unresolved external symbol _MPI_Send@24
+main.obj : error LNK2001: unresolved external symbol _MPI_Comm_rank@8
+main.obj : error LNK2001: unresolved external symbol _MPI_Comm_size@8
+main.obj : error LNK2001: unresolved external symbol _MPI_Finalize@0
+main.obj : error LNK2001: unresolved external symbol _MPI_Init@8
+C:\Users\Julia\Desktop\MPI_3_4\Release\MPI_3_4Parallel.exe : fatal error LNK1120: 7 unresolved externals
