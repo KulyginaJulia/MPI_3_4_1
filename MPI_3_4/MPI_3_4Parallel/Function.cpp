@@ -82,7 +82,7 @@ int find_match(int hash_prefix, unsigned int hash_character)
 	return(index);
 }
 
-void expand(FILE *input, FILE *output, int indicator) {
+void expand(FILE *input, FILE *output) {
 	unsigned int next_code=0;
 	unsigned int new_code=0;
 	unsigned int old_code=0;
@@ -92,21 +92,20 @@ void expand(FILE *input, FILE *output, int indicator) {
 
 	next_code = 256;
 	printf("Expanding...\n");
-	old_code = input_code(input, indicator);
+	old_code = input_code(input);
 	character = old_code;
 	putc(old_code, output);
 
-	while ((new_code = input_code(input, indicator)) != (MAX_VALUE)){
+	while ((new_code = input_code(input)) != (MAX_VALUE)){
 		if (new_code >= next_code){
 			*decode_stack = character;
 			string = decode_string(decode_stack + 1, old_code);
-		}//спец случай с повтор. строками
+		}
 		else
 			string = decode_string(decode_stack, new_code);
 		character = *string;
 		while (string >= decode_stack) {
-	/*		if ((*string--) != NULL)*/
-				putc(*string--, output);
+			putc(*string--, output);
 		}
 		if (next_code <= MAX_CODE){
 			prefix_code[next_code] = old_code;
@@ -128,34 +127,20 @@ unsigned char *decode_string(unsigned char *buffer, unsigned int code)
 	return buffer;
 }
 
-unsigned int input_code(FILE *input, int indicator)
+unsigned int input_code(FILE *input)
 {
 	unsigned int return_value;
-	if (indicator == 0) {
-		static int input_bit_count = 0;
-		static unsigned long input_bit_buffer = 0L;
-		while (input_bit_count <= 24) {
-			input_bit_buffer = input_bit_buffer | (unsigned long)getc(input) << (24 - input_bit_count);
-			input_bit_count += 8;
-		}
-		return_value = input_bit_buffer >> (32 - BITS);
-		input_bit_buffer = input_bit_buffer << BITS;
-		input_bit_count -= BITS;
-		return(return_value);
+	static int input_bit_count = 0;
+	static unsigned long input_bit_buffer = 0L;
+	while (input_bit_count <= 24) {
+		input_bit_buffer = input_bit_buffer | (unsigned long)getc(input) << (24 - input_bit_count);
+		input_bit_count += 8;
 	}
-	else {
-		static int input_bit_count_p = 0;
-		static unsigned long input_bit_buffer_p = 0L;
-		while (input_bit_count_p <= 24) {
-			input_bit_buffer_p = input_bit_buffer_p | (unsigned long)getc(input) << (24 - input_bit_count_p);
-			input_bit_count_p += 8;
-		}
-		return_value = input_bit_buffer_p >> (32 - BITS);
-		input_bit_buffer_p = input_bit_buffer_p << BITS;
-		input_bit_count_p -= BITS;
-		return(return_value);
+	return_value = input_bit_buffer >> (32 - BITS);
+	input_bit_buffer = input_bit_buffer << BITS;
+	input_bit_count -= BITS;
+	return(return_value);
 
-	}
 }
 void output_code(FILE *output, unsigned int code)
 {

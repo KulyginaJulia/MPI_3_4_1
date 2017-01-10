@@ -22,7 +22,7 @@ char *compress(char *input, int count_input, char *output, int count_out, int & 
 	unsigned int string_code;
 	unsigned int index;
 	int i = 0;
-
+	unsigned char p_decode_stack[4095];
 	next_code = 256;
 
 	for (i = 0; i < TABLE_SIZE; i++) {
@@ -58,6 +58,8 @@ char *compress(char *input, int count_input, char *output, int count_out, int & 
 		i++;
 	}
 	output = output_code(output, string_code, count_out);
+	output_code(output, MAX_VALUE, count_out);
+	output_code(output, 0, count_out);
 	for (int j = 0; j < count_out; j++)
 		if (output[j] != -1)
 			length_out++; //length_out++;
@@ -99,37 +101,6 @@ unsigned int find_match(unsigned int hash_prefix, unsigned int hash_character, u
 	return(index);
 }
 
-void bubblesort(unsigned int* A, int count){
-	int i, j, tmp;
-	for (i = count - 1; i >= 0; i--){
-		for (j = 0; j < i; j++){
-			if (A[j] > A[j + 1]){
-				tmp = A[j];
-				A[j] = A[j + 1];
-				A[j + 1] = tmp;
-			}
-		}
-	}
-}
-
-unsigned int* Merge(unsigned int* A,unsigned int* B, int Count){
-	int a=0, b=0;
-	unsigned int* tmp = (unsigned int*)malloc(TABLE_SIZE*sizeof(unsigned int));
-	while (a + b < 2*Count)
-	{
-		if ((b >= Count) || ((a<Count) && (A[a] <= B[b]))){
-			tmp[a + b] = A[a];
-			++a;
-		}
-		else {
-			tmp[a + b] = B[b];
-			++b;
-		}
-	}
-	return tmp;
-}
-
-
 void Testing(FILE* A, FILE* B, int count) {
 	int flag = 1;
 	char* ch_1 = (char*)malloc(count * sizeof(char));
@@ -139,7 +110,7 @@ void Testing(FILE* A, FILE* B, int count) {
 		fgets(ch_1, count, A);
 		fgets(ch_2, count, B);
 		if (strcmp(ch_1, ch_2))
-			flag = 0;																																							flag = 1;
+			flag = 0;																																							//flag = 1;
 	}
 
 	if (flag == 1)
@@ -148,4 +119,65 @@ void Testing(FILE* A, FILE* B, int count) {
 		printf_s("Uncorrect!");
 	free(ch_1);
 	free(ch_2);
+}
+char* expand(char *input, char *output, int length_out, unsigned char* p_append_character, unsigned int* p_prefix_code) {
+	unsigned int next_code = 0;
+	unsigned int new_code = 0;
+	unsigned int old_code = 0;
+	int character = 0;
+	int counter = 0;
+	unsigned char *string;
+	int j = 0;
+	next_code = 256;
+	printf("Expanding...\n");
+	old_code = input_code(input, length_out);
+	character = old_code;
+	output[j] = old_code;
+	j++;
+	while ((new_code = input_code(input, length_out)) != (MAX_VALUE)) {
+		if (new_code >= next_code) {
+			*decode_stack = character;
+			string = decode_string(decode_stack + 1, old_code, p_append_character, p_prefix_code);
+		}
+		else
+			string = decode_string(decode_stack, new_code, p_append_character, p_prefix_code);
+		character = *string;
+		while (string >= decode_stack) {
+			output[j] = *string--;
+			j++;
+		}
+		if (next_code <= MAX_CODE) {
+			p_prefix_code[next_code] = old_code;
+			p_append_character[next_code] = character;
+			next_code++;
+		}
+		old_code = new_code;
+	}
+	return output;
+}
+unsigned int input_code(char *input, int length_out)
+{
+	unsigned int return_value;
+	static int input_bit_count = 0;
+	static unsigned long input_bit_buffer = 0L;
+	static int i = 0;
+	while ((input_bit_count <= 24) && (i<length_out)){
+		input_bit_buffer = input_bit_buffer | (unsigned long)input[i] << (24 - input_bit_count);
+		input_bit_count += 8;
+		i++;
+	}
+	return_value = input_bit_buffer >> (32 - BITS);
+	input_bit_buffer = input_bit_buffer << BITS;
+	input_bit_count -= BITS;
+	return(return_value);
+}
+unsigned char *decode_string(unsigned char *buffer, unsigned int code, unsigned char* p_append_character, unsigned int* p_prefix_code)
+{
+	int i = 0;
+	while (code > 255) {
+		*buffer++ = p_append_character[code];
+		code = p_prefix_code[code];
+	}
+	*buffer = code;
+	return buffer;
 }

@@ -18,13 +18,12 @@ extern unsigned int code_value[TABLE_SIZE];
 extern unsigned int prefix_code[TABLE_SIZE];
 extern unsigned char append_character[TABLE_SIZE];
 
-
 void Generation(long int N);
 unsigned char *decode_string(unsigned char *buffer, unsigned int code);
 void compress(FILE *input, FILE *output);
-void expand(FILE *input, FILE *output, int indicator);
+void expand(FILE *input, FILE *output);
 
 int find_match(int hash_prefix, unsigned int hash_character);
 void output_code(FILE *output, unsigned int code);
-unsigned int input_code(FILE *input, int indicator);
+unsigned int input_code(FILE *input);
 #endif

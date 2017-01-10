@@ -1,9 +1,9 @@
-﻿  main.cpp
-main.cpp(111): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+﻿  Source.cpp
+Source.cpp(25): warning C4101: 'p_decode_stack': unreferenced local variable
   Generating code
-  1 of 19 functions ( 5.3%) were compiled, the rest were copied from previous compilation.
+  Finished generating code
+  3 of 22 functions (13.6%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
-  Finished generating code
   MPI_3_4Parallel.vcxproj -> C:\Users\Julia\Desktop\MPI_3_4\x64\Release\MPI_3_4Parallel.exe
   MPI_3_4Parallel.vcxproj -> C:\Users\Julia\Desktop\MPI_3_4\x64\Release\MPI_3_4Parallel.pdb (Full PDB)
