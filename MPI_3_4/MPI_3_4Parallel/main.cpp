@@ -73,9 +73,7 @@ int main(int argc, char *argv[]){
 		char *tempv = str_file;	
 		int * temp_out_length = (int*)malloc((ProcNum) * sizeof(int));
 		char *tempv1 = str_file;
-		unsigned int temp_code_value[TABLE_SIZE];
-		unsigned int  p_prefix_code[TABLE_SIZE];
-		unsigned char p_append_character[TABLE_SIZE];
+		
 		for (int i = 0; i < c*ProcNum; i++)
 			out_str[i] = -1;
 
@@ -93,7 +91,7 @@ int main(int argc, char *argv[]){
 		}
 		char* temp_out = out_str;
 		int length_out = 0;
-		temp_out = compress(tempv1, dataSize, out_str, c, length_out, temp_code_value, p_append_character, p_prefix_code);
+		temp_out = compress(tempv1, dataSize, out_str, c, length_out);
 		temp_out += length_out;
 		temp_out_length[0] = length_out;
 		for (i = 1; i < ProcNum; i++) {
@@ -133,11 +131,8 @@ int main(int argc, char *argv[]){
 		//expand
 		char* temp_str_1 = str_file_t;
 		char* temp_out_1 = out_str;
-		for (int i = 0; i < TABLE_SIZE; i++) {
-			p_prefix_code[i] = -1;
-			p_append_character[i] = -1;
-		}
-		temp_str_1 = expand(temp_out_1, temp_str_1, temp_out_length[0], p_append_character, p_prefix_code);
+		
+		str_file_t = expand(out_str, str_file_t, temp_out_length[0],dataSize);
 
 		char* temp_str = str_file_t;
 		for (i = 1; i < ProcNum; i++) {
@@ -145,9 +140,9 @@ int main(int argc, char *argv[]){
 			MPI_Recv(temp_str, dataSize, MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
 		}
 
-		for (int k = 0; k < Count; k++)
+		for (int k = 0; k < Count; k++) {
 			putc(str_file_t[k], output_file);
-
+		}
 		fclose(output_file);
 		fopen_s(&output_file, "Ptestout.txt", "rb");
 		fopen_s(&input_file, "test.txt", "rb");
@@ -163,6 +158,7 @@ int main(int argc, char *argv[]){
 		free(temp_out_length);
 		free(str_file);
 		free(out_str);
+		free(str_file_t);
 	}
 	
 	if (ProcRank != 0) {
@@ -171,9 +167,6 @@ int main(int argc, char *argv[]){
 		char *str_file1 = (char *)malloc(dataSize * sizeof(char));
 		char* out_str1 = (char*)malloc((c) * sizeof(char));
 		char *str_file2 = (char *)malloc(dataSize * sizeof(char));
-		unsigned int temp_code_value[TABLE_SIZE];
-		unsigned int  p_prefix_code [TABLE_SIZE];
-		unsigned char p_append_character[TABLE_SIZE];
 		for (int i = 0; i < c; i++)
 			out_str1[i] = -1;
 
@@ -181,7 +174,7 @@ int main(int argc, char *argv[]){
 
 		Ptime_1 = MPI_Wtime();
 		int length_out = 0;
-		out_str1 = compress(str_file1, dataSize, out_str1, c , length_out, temp_code_value,p_append_character, p_prefix_code);
+		out_str1 = compress(str_file1, dataSize, out_str1, c , length_out);
 		
 		Ptime_2 = MPI_Wtime();
 
@@ -194,11 +187,7 @@ int main(int argc, char *argv[]){
 		printf("ProcRank = %d , time = %f", ProcRank, Pdelta);
 		printf("\n");
 
-		for (int i = 0; i < TABLE_SIZE; i++) {
-			p_prefix_code[i] = -1;
-			p_append_character[i] = -1;
-		}
-		str_file2 = expand(out_str1, str_file2, length_out, p_append_character, p_prefix_code);
+		str_file2 = expand(out_str1, str_file2, length_out, dataSize);
 		
 		MPI_Send(str_file2, dataSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 

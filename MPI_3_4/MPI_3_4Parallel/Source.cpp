@@ -6,7 +6,7 @@ char * output_code(char *output, unsigned int code, int count)
 	static int j = 0;
 	static int output_bit_count = 0;
 	static unsigned long output_bit_buffer = 0L;
-	output_bit_buffer = output_bit_buffer | ((unsigned long)code << (32 - BITS - output_bit_count));
+	output_bit_buffer = output_bit_buffer | (unsigned long)code << (32 - BITS - output_bit_count);
 	output_bit_count += BITS;
 	while ((output_bit_count >= 8) && (j < count) ){
 			output[j] = output_bit_buffer >> 24;
@@ -16,14 +16,16 @@ char * output_code(char *output, unsigned int code, int count)
 	}
 	return output; 
 }
-char *compress(char *input, int count_input, char *output, int count_out, int & length_out, unsigned int* temp_code_value, unsigned char* p_append_character, unsigned int* p_prefix_code) {
+char *compress(char *input, int count_input, char *output, int count_out, int & length_out) {
 	unsigned int next_code;
 	unsigned int character;
 	unsigned int string_code;
 	unsigned int index;
 	int i = 0;
-	unsigned char p_decode_stack[4095];
 	next_code = 256;
+	unsigned int temp_code_value[TABLE_SIZE];
+	unsigned int  p_prefix_code[TABLE_SIZE];
+	unsigned char p_append_character[TABLE_SIZE];
 
 	for (i = 0; i < TABLE_SIZE; i++) {
 		temp_code_value[i] = -1;
@@ -35,7 +37,7 @@ char *compress(char *input, int count_input, char *output, int count_out, int & 
 		output[k] = 0;*/
 	i = 0;
 	printf_s("Compressing...\n");
-	string_code = input[0];
+	string_code = input[i];
 	i++;
 	length_out = 0;
 	while (i < count_input){
@@ -58,8 +60,8 @@ char *compress(char *input, int count_input, char *output, int count_out, int & 
 		i++;
 	}
 	output = output_code(output, string_code, count_out);
-	output_code(output, MAX_VALUE, count_out);
-	output_code(output, 0, count_out);
+	output = output_code(output, MAX_VALUE, count_out);
+	output = output_code(output, 0, count_out);
 	for (int j = 0; j < count_out; j++)
 		if (output[j] != -1)
 			length_out++; //length_out++;
@@ -120,13 +122,21 @@ void Testing(FILE* A, FILE* B, int count) {
 	free(ch_1);
 	free(ch_2);
 }
-char* expand(char *input, char *output, int length_out, unsigned char* p_append_character, unsigned int* p_prefix_code) {
+char* expand(char *input, char *output, int length_out, int count) {
 	unsigned int next_code = 0;
 	unsigned int new_code = 0;
 	unsigned int old_code = 0;
 	int character = 0;
 	int counter = 0;
 	unsigned char *string;
+	unsigned char p_decode_stack[4095];
+	unsigned int  p_prefix_code[TABLE_SIZE];
+	unsigned char p_append_character[TABLE_SIZE];
+
+	for (int i = 0; i < TABLE_SIZE; i++) {
+		p_prefix_code[i] = -1;
+		p_append_character[i] = -1;
+	}
 	int j = 0;
 	next_code = 256;
 	printf("Expanding...\n");
@@ -134,16 +144,17 @@ char* expand(char *input, char *output, int length_out, unsigned char* p_append_
 	character = old_code;
 	output[j] = old_code;
 	j++;
-	while ((new_code = input_code(input, length_out)) != (MAX_VALUE)) {
+	while (((new_code = input_code(input, length_out)) != (MAX_VALUE)) &&(j < count)){
 		if (new_code >= next_code) {
-			*decode_stack = character;
-			string = decode_string(decode_stack + 1, old_code, p_append_character, p_prefix_code);
+			*p_decode_stack = character;
+			string = decode_string(p_decode_stack + 1, old_code, p_append_character, p_prefix_code);
 		}
 		else
-			string = decode_string(decode_stack, new_code, p_append_character, p_prefix_code);
+			string = decode_string(p_decode_stack, new_code, p_append_character, p_prefix_code);
 		character = *string;
-		while (string >= decode_stack) {
-			output[j] = *string--;
+		while (string >= p_decode_stack) {
+			output[j] = *string;
+			*string--;
 			j++;
 		}
 		if (next_code <= MAX_CODE) {
@@ -152,6 +163,9 @@ char* expand(char *input, char *output, int length_out, unsigned char* p_append_
 			next_code++;
 		}
 		old_code = new_code;
+	}
+	for (int i = 0; i < count; i++) {
+		printf_s("s = %c", output[i]);
 	}
 	return output;
 }
