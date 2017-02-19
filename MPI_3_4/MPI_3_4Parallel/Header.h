@@ -8,7 +8,7 @@
 
 #include "Function.h"
 
-char * output_code(char *output, unsigned int code, int count);
+char * output_code(char *output, unsigned int code, int count, int &length_out);
 void Testing(FILE* A, FILE* B, int count);
 unsigned int find_match(unsigned int hash_prefix, unsigned int hash_character, unsigned int *temp_code_value, unsigned char* p_append_character, unsigned int* p_prefix_code);
 char* compress(char *input, int count, char *output, int count_out, int &length_out);

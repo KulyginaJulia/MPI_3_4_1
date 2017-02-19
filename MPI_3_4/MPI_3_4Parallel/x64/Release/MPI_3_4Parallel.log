@@ -1,4 +1,7 @@
-﻿  Source.cpp
+﻿  main.cpp
+main.cpp(110): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+main.cpp(111): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+main.cpp(150): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
   Generating code
   Finished generating code
   1 of 22 functions ( 4.5%) were compiled, the rest were copied from previous compilation.

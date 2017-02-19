@@ -26,7 +26,6 @@ void compress(FILE *input, FILE *output){
 	string_code = getc(input); 
 	while ((character = getc(input)) != (unsigned)EOF)
 	{
-		// Смотрит, есть ли строка в таблице, если есть, то возвращает код, иначе заносит в таблицу
 		index = find_match(string_code, character);
 		if (code_value[index] != -1)
 			string_code = code_value[index];

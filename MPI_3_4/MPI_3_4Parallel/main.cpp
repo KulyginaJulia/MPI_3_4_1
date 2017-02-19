@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
 	FILE *input_file;
 	FILE *output_file;
 	FILE *lzw_file;
-	int Count;
+	long int Count;
 	char *str_file = NULL;
 
 	if (argc >= 2) {
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
 	}
 	MPI_Status status;
 	MPI_Init(&argc, &argv);
-
+	Count *= 1000;
 	MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
 	MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
 	str_file = (char*)malloc(Count * sizeof(char));
@@ -68,12 +68,13 @@ int main(int argc, char *argv[]){
 		int i;
 		int c = 3 * dataSize / 2;
 		char *str_file = (char*)malloc((Count+1) * sizeof(char));
-		char* out_str = (char*)malloc((c)*ProcNum * sizeof(char));
+		char* out_str = (char*)malloc(c*ProcNum * sizeof(char));
 		char *str_file_t = (char*)malloc((Count + 1) * sizeof(char));
-		char *tempv = str_file;	
-		int * temp_out_length = (int*)malloc((ProcNum) * sizeof(int));
+		int * temp_out_length = (int*)malloc((ProcNum+1) * sizeof(int));
 		char *tempv1 = str_file;
-		
+		char *tempv = str_file;	
+		for (int i = 0; i < ProcNum+1; i++)
+			temp_out_length[i] = 0;
 		for (int i = 0; i < c*ProcNum; i++)
 			out_str[i] = -1;
 
@@ -89,21 +90,17 @@ int main(int argc, char *argv[]){
 			MPI_Send(tempv, dataSize, MPI_CHAR, i, 0, MPI_COMM_WORLD);
 			tempv += dataSize;
 		}
-		char* temp_out = out_str;
+		
 		int length_out = 0;
-		temp_out = compress(tempv1, dataSize, out_str, c, length_out);
-		temp_out += length_out;
+		out_str = compress(tempv1, dataSize, out_str, c, length_out);
+		
 		temp_out_length[0] = length_out;
 		for (i = 1; i < ProcNum; i++) {
 			MPI_Recv(&temp_out_length[i], 1, MPI_INT, i, 0, MPI_COMM_WORLD, &status);
 		}
 
-		for (int j = 0; j < ProcNum; j++) {
-			printf_s("out_length[ %d", j);
-			printf_s("] = %d", temp_out_length[j]);
-			printf_s("\n");
-		}
-
+		char* temp_out = out_str;
+		temp_out += temp_out_length[0];
 		for (i = 1; i < ProcNum; i++) {
 			MPI_Recv(temp_out, temp_out_length[i], MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
 			temp_out += temp_out_length[i];
@@ -111,38 +108,52 @@ int main(int argc, char *argv[]){
 
 		if (deltaSize != 0) {
 			int j = Count - deltaSize;
-			while (j < Count ) {
-				for (int i = c*ProcNum; i < c*ProcNum + deltaSize; i++)
-					out_str[i] = str_file[j];
-				j++;
-			}			
+			temp_out = compress(tempv,deltaSize,temp_out,c, temp_out_length[ProcNum+1]);
+
 		}
 
-		time2 = MPI_Wtime();
+
 
 		fopen_s(&lzw_file, "Ptest.lzw", "wb");
-		for (int j = 0; j < ProcNum; j++)
+		int len = 0;
+		for (int j = 0; j < ProcNum+1; j++) {
 			for (i = 0; i < temp_out_length[j]; i++)
-				putc(out_str[j*(temp_out_length[j]-1) +i], lzw_file);
+				putc(out_str[len + i], lzw_file);
+			len += temp_out_length[j];
+		}
+		time2 = MPI_Wtime();
+		for (int j = 0; j < ProcNum+1; j++) {
+			printf_s("out_length[ %d", j);
+			printf_s("] = %d", temp_out_length[j]);
+			printf_s("\n");
+		}
 
 		fclose(lzw_file);
-		
 		fopen_s(&output_file, "Ptestout.txt", "wb");
 		//expand
+		for (int i = 0; i < dataSize; i++)
+			str_file_t[i] = 0;
 		char* temp_str_1 = str_file_t;
 		char* temp_out_1 = out_str;
-		
-		str_file_t = expand(out_str, str_file_t, temp_out_length[0],dataSize);
+
+		str_file_t = expand(out_str, str_file_t, temp_out_length[0], dataSize);
 
 		char* temp_str = str_file_t;
 		for (i = 1; i < ProcNum; i++) {
-			temp_str+= dataSize;
+			temp_str += dataSize;
 			MPI_Recv(temp_str, dataSize, MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
 		}
 
-		for (int k = 0; k < Count; k++) {
+
+		if (deltaSize != 0) {
+			temp_str += dataSize;
+			temp_str = expand(out_str, temp_str, temp_out_length[ProcNum+1],deltaSize);
+		}
+
+		for (int k = 0; k < ProcNum*dataSize+deltaSize; k++) {
 			putc(str_file_t[k], output_file);
 		}
+
 		fclose(output_file);
 		fopen_s(&output_file, "Ptestout.txt", "rb");
 		fopen_s(&input_file, "test.txt", "rb");
@@ -169,13 +180,12 @@ int main(int argc, char *argv[]){
 		char *str_file2 = (char *)malloc(dataSize * sizeof(char));
 		for (int i = 0; i < c; i++)
 			out_str1[i] = -1;
-
+		
 		MPI_Recv(str_file1, dataSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &status);
 
 		Ptime_1 = MPI_Wtime();
 		int length_out = 0;
 		out_str1 = compress(str_file1, dataSize, out_str1, c , length_out);
-		
 		Ptime_2 = MPI_Wtime();
 
 		MPI_Send(&length_out, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
@@ -186,9 +196,10 @@ int main(int argc, char *argv[]){
 		double Pdelta = Ptime_2 - Ptime_1;
 		printf("ProcRank = %d , time = %f", ProcRank, Pdelta);
 		printf("\n");
+		for (int i = 0; i < dataSize; i++)
+			str_file2[i] = 0;
 
 		str_file2 = expand(out_str1, str_file2, length_out, dataSize);
-		
 		MPI_Send(str_file2, dataSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
 
 		free(str_file1);
